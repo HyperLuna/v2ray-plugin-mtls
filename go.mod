@@ -1,8 +1,8 @@
-module github.com/shadowsocks/v2ray-plugin
+module github.com/HyperLuna/v2ray-plugin-mtls
 
 go 1.16
 
 require (
-	github.com/golang/protobuf v1.5.2
-	github.com/v2fly/v2ray-core/v4 v4.38.3
+	github.com/golang/protobuf v1.5.3
+	github.com/v2fly/v2ray-core/v5 v5.7.0
 )
