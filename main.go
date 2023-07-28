@@ -50,6 +50,8 @@ var (
 	cert       = flag.String("cert", "", "Path to TLS certificate file. Overrides certRaw. Default: ~/.acme.sh/{host}/fullchain.cer")
 	certRaw    = flag.String("certRaw", "", "Raw TLS certificate content. Intended only for Android.")
 	key        = flag.String("key", "", "(server) Path to TLS key file. Default: ~/.acme.sh/{host}/{host}.key")
+	clientCert = flag.String("clientCert", "", "Path to Mutual TLS certificate file.")
+	clientKey  = flag.String("clientKey", "", "(client) Path to Mutual TLS key file.")
 	mode       = flag.String("mode", "websocket", "Transport mode: websocket, quic (enforced tls).")
 	mux        = flag.Int("mux", 1, "Concurrent multiplexed connections (websocket client mode only).")
 	server     = flag.Bool("server", false, "Run in server mode")
@@ -182,14 +184,39 @@ func generateConfig() (*core.Config, error) {
 			if err != nil {
 				return nil, newError("failed to read key file").Base(err)
 			}
-			tlsConfig.Certificate = []*tls.Certificate{&certificate}
-		} else if *cert != "" || *certRaw != "" {
-			certificate := tls.Certificate{Usage: tls.Certificate_AUTHORITY_VERIFY}
-			certificate.Certificate, err = readCertificate()
-			if err != nil {
-				return nil, newError("failed to read cert").Base(err)
+			if *clientCert == "" {
+				tlsConfig.Certificate = []*tls.Certificate{&certificate}
+			} else {
+				tlsConfig.VerifyClientCertificate = true
+				clientCertificate := tls.Certificate{Usage: tls.Certificate_AUTHORITY_VERIFY_CLIENT}
+				clientCertificate.Certificate, err = filesystem.ReadFile(*clientCert)
+				if err != nil {
+					return nil, newError("failed to read client cert").Base(err)
+				}
+				tlsConfig.Certificate = []*tls.Certificate{&certificate, &clientCertificate}
 			}
-			tlsConfig.Certificate = []*tls.Certificate{&certificate}
+		} else {
+			tlsConfig.Certificate = []*tls.Certificate{}
+			if *cert != "" || *certRaw != "" {
+				certificate := tls.Certificate{Usage: tls.Certificate_AUTHORITY_VERIFY}
+				certificate.Certificate, err = readCertificate()
+				if err != nil {
+					return nil, newError("failed to read cert").Base(err)
+				}
+				tlsConfig.Certificate = append(tlsConfig.Certificate, &certificate)
+			}
+			if *clientCert != "" {
+				clientCertificate := tls.Certificate{Usage: tls.Certificate_ENCIPHERMENT}
+				clientCertificate.Certificate, err = filesystem.ReadFile(*clientCert)
+				if err != nil {
+					return nil, newError("failed to read client cert file").Base(err)
+				}
+				clientCertificate.Key, err = filesystem.ReadFile(*clientKey)
+				if err != nil {
+					return nil, newError("failed to read client key file").Base(err)
+				}
+				tlsConfig.Certificate = append(tlsConfig.Certificate, &clientCertificate)
+			}
 		}
 		streamConfig.SecurityType = serial.GetMessageType(&tlsConfig)
 		streamConfig.SecuritySettings = []*any.Any{serial.ToTypedMessage(&tlsConfig)}
@@ -290,6 +317,12 @@ func startV2Ray() (core.Server, error) {
 		}
 		if c, b := opts.Get("key"); b {
 			*key = c
+		}
+		if c, b := opts.Get("clientCert"); b {
+			*clientCert = c
+		}
+		if c, b := opts.Get("clientKey"); b {
+			*clientKey = c
 		}
 		if c, b := opts.Get("loglevel"); b {
 			*logLevel = c
