@@ -1,0 +1,33 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Build and upload
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ 'windows', 'linux' ]
+        arch: [ 'amd64', 'arm64' ]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+    - name: Install dependencies
+      run: go get
+    - name: Build
+      run: env CGO_ENABLED=0 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -ldflags "-s -w" -o bin/v2ray-plugin-mtls_${{ matrix.os }}_${{ matrix.arch }}
+    - name: Rename
+      if: ${{ matrix.os == 'windows' }}
+      run: mv bin/v2ray-plugin-mtls_${{ matrix.os }}_${{ matrix.arch }} bin/v2ray-plugin-mtls_${{ matrix.os }}_${{ matrix.arch }}.exe
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.os }}-${{ matrix.arch }}
+        path: bin/v2ray-plugin-mtls_${{ matrix.os }}_${{ matrix.arch }}*
