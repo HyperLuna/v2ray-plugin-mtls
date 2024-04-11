@@ -11,8 +11,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
+	"google.golang.org/protobuf/runtime/protoiface"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	_ "github.com/v2fly/v2ray-core/v5/app/proxyman/inbound"
 	_ "github.com/v2fly/v2ray-core/v5/app/proxyman/outbound"
@@ -124,7 +124,7 @@ func generateConfig() (*core.Config, error) {
 		},
 	})
 
-	var transportSettings proto.Message
+	var transportSettings protoiface.MessageV1
 	var connectionReuse bool
 	switch *mode {
 	case "websocket":
@@ -219,10 +219,10 @@ func generateConfig() (*core.Config, error) {
 			}
 		}
 		streamConfig.SecurityType = serial.GetMessageType(&tlsConfig)
-		streamConfig.SecuritySettings = []*any.Any{serial.ToTypedMessage(&tlsConfig)}
+		streamConfig.SecuritySettings = []*anypb.Any{serial.ToTypedMessage(&tlsConfig)}
 	}
 
-	apps := []*any.Any{
+	apps := []*anypb.Any{
 		serial.ToTypedMessage(&dispatcher.Config{}),
 		serial.ToTypedMessage(&proxyman.InboundConfig{}),
 		serial.ToTypedMessage(&proxyman.OutboundConfig{}),
