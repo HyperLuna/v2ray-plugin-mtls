@@ -19,7 +19,7 @@ require (
 	go.uber.org/mock v0.4.0 // indirect
 	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/exp v0.0.0-20240529005216-23cca8864a10 // indirect
-	golang.org/x/mod v0.19.0 // indirect
+	golang.org/x/mod v0.20.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
